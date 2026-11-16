@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% if not ai_enabled %}
+<div class="notice" role="status">
+  <strong>Offline mode.</strong> No API key found, so summaries and tags come from a basic
+  keyword pass. Add <code>GROQ_API_KEY</code> to your <code>.env</code> file and restart to turn the AI on.
+</div>
+{% endif %}
+
+<section class="deposit" aria-labelledby="deposit-heading">
+  <h1 class="deposit__heading" id="deposit-heading">Add a link</h1>
+  <form class="deposit__form" id="add-form" autocomplete="off">
+    <label class="sr-only" for="url-input">Webpage address</label>
+    <input
+      class="deposit__input"
+      id="url-input"
+      name="url"
+      type="text"
+      inputmode="url"
+      placeholder="https://example.com/article"
+      required>
+    <button class="btn btn--brass" id="add-button" type="submit">File it</button>
+  </form>
+  <p class="deposit__status" id="add-status" role="status" aria-live="polite"></p>
+
+  <div class="reader" id="reader" hidden aria-hidden="true">
+    <div class="reader__bar"><span class="reader__fill"></span></div>
+    <ol class="reader__steps">
+      <li data-step="scout">Scout · fetching page</li>
+      <li data-step="reader">Reader · cleaning text</li>
+      <li data-step="summariser">Summariser · writing summary</li>
+      <li data-step="tagger">Tagger · choosing tags</li>
+      <li data-step="quality">Quality Checker · reviewing</li>
+      <li data-step="librarian">Librarian · filing the card</li>
+    </ol>
+  </div>
+</section>
+
+<div class="catalog">
+  <aside class="drawers" aria-label="Filters">
+    <form class="search" method="get" action="{{ url_for('pages.home') }}">
+      <label class="drawers__label" for="search-input">Search</label>
+      <input
+        class="search__input"
+        id="search-input"
+        type="search"
+        name="q"
+        value="{{ filters.q }}"
+        placeholder="title, summary, tag…">
+      {% if filters.category %}<input type="hidden" name="category" value="{{ filters.category }}">{% endif %}
+      {% if filters.tag %}<input type="hidden" name="tag" value="{{ filters.tag }}">{% endif %}
+      <input type="hidden" name="sort" value="{{ filters.sort }}">
+      <button class="btn btn--quiet" type="submit">Search</button>
+    </form>
+
+    <div class="drawers__group">
+      <p class="drawers__label">Categories</p>
+      <ul class="drawer-list">
+        <li>
+          <a class="drawer{% if not filters.category %} is-open{% endif %}"
+             href="{{ url_for('pages.home', q=filters.q, tag=filters.tag, sort=filters.sort) }}">
+            <span>All</span><span class="drawer__count">{{ stats.links }}</span>
+          </a>
+        </li>
+        {% for category in categories %}
+        <li>
+          <a class="drawer{% if filters.category == category %} is-open{% endif %}"
+             href="{{ url_for('pages.home', category=category, q=filters.q, tag=filters.tag, sort=filters.sort) }}">
+            <span>{{ category }}</span>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div class="drawers__group">
+      <p class="drawers__label">Tags</p>
+      {% if tags %}
+      <ul class="tag-cloud">
+        {% for tag in tags %}
+        <li>
+          <a class="chip{% if filters.tag == tag.name %} is-active{% endif %}"
+             href="{{ url_for('pages.home', tag=tag.name if filters.tag != tag.name else None, q=filters.q, category=filters.category, sort=filters.sort) }}">
+            {{ tag.name }}<span class="chip__count">{{ tag.count }}</span>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="drawers__empty">Tags appear once you save your first link.</p>
+      {% endif %}
+    </div>
+  </aside>
+
+  <section class="stacks" aria-label="Saved links">
+    <div class="stacks__bar">
+      <p class="stacks__count">
+        {{ links|length }} card{{ '' if links|length == 1 else 's' }}
+        {% if filters.q %}matching “{{ filters.q }}”{% endif %}
+        {% if filters.category %}in {{ filters.category }}{% endif %}
+        {% if filters.tag %}tagged {{ filters.tag }}{% endif %}
+      </p>
+      <form class="sorter" method="get" action="{{ url_for('pages.home') }}">
+        <input type="hidden" name="q" value="{{ filters.q }}">
+        <input type="hidden" name="category" value="{{ filters.category }}">
+        <input type="hidden" name="tag" value="{{ filters.tag }}">
+        <label class="sr-only" for="sort-select">Sort by</label>
+        <select class="sorter__select" id="sort-select" name="sort" onchange="this.form.submit()">
+          <option value="newest" {{ 'selected' if filters.sort == 'newest' }}>Newest first</option>
+          <option value="oldest" {{ 'selected' if filters.sort == 'oldest' }}>Oldest first</option>
+          <option value="title" {{ 'selected' if filters.sort == 'title' }}>Title A–Z</option>
+          <option value="updated" {{ 'selected' if filters.sort == 'updated' }}>Recently edited</option>
+        </select>
+      </form>
+    </div>
+
+    <div class="cards" id="cards">
+      {% for link in links %}
+      {% include "_card.html" %}
+      {% else %}
+      <div class="empty">
+        <p class="empty__title">The drawers are empty.</p>
+        <p class="empty__body">
+          {% if filters.q or filters.category or filters.tag %}
+            Nothing matches those filters. Clear them and try again.
+          {% else %}
+            Paste a URL above and LinkLibrarian will read the page, write a summary, and file it under a category.
+          {% endif %}
+        </p>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+
+<!-- Edit drawer -->
+<div class="modal" id="edit-modal" hidden>
+  <div class="modal__backdrop" data-close></div>
+  <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+    <h2 class="modal__title" id="edit-title">Edit card</h2>
+    <form id="edit-form">
+      <input type="hidden" id="edit-id">
+      <label class="field">
+        <span class="field__label">Title</span>
+        <input class="field__input" id="edit-title-input" type="text" maxlength="500" required>
+      </label>
+      <label class="field">
+        <span class="field__label">Address</span>
+        <input class="field__input" id="edit-url" type="text" required>
+      </label>
+      <label class="field">
+        <span class="field__label">Summary</span>
+        <textarea class="field__input field__input--area" id="edit-summary" rows="5"></textarea>
+      </label>
+      <div class="field-row">
+        <label class="field">
+          <span class="field__label">Category</span>
+          <input class="field__input" id="edit-category" type="text" list="category-options">
+          <datalist id="category-options">
+            {% for category in categories %}<option value="{{ category }}"></option>{% endfor %}
+          </datalist>
+        </label>
+        <label class="field">
+          <span class="field__label">Tags</span>
+          <input class="field__input" id="edit-tags" type="text" placeholder="comma, separated">
+        </label>
+      </div>
+      <p class="modal__error" id="edit-error" role="alert"></p>
+      <div class="modal__actions">
+        <button class="btn btn--quiet" type="button" data-close>Cancel</button>
+        <button class="btn btn--brass" type="submit">Save changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% endblock %}

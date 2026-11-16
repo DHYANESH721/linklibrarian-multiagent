@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Something broke · LinkLibrarian{% endblock %}
+{% block content %}
+<section class="stop">
+  <p class="stop__code">500</p>
+  <h1 class="stop__title">The catalog jammed.</h1>
+  <p class="stop__body">An unexpected error stopped that request. Check the server log for details, then try again.</p>
+  <a class="btn btn--brass" href="{{ url_for('pages.home') }}">Back to the catalog</a>
+</section>
+{% endblock %}

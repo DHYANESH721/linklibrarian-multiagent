@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ link.title }} · LinkLibrarian{% endblock %}
+
+{% block content %}
+<p class="crumb"><a href="{{ url_for('pages.home') }}">← Back to the catalog</a></p>
+
+<article class="card card--solo">
+  <span class="card__punch" aria-hidden="true"></span>
+  <header class="card__head">
+    <span class="card__call">{{ link.category[:3]|upper }} · {{ '%04d'|format(link.id) }}</span>
+    <span class="card__stamp">{{ link.date_added|shortdate }}</span>
+  </header>
+
+  <h1 class="card__title card__title--solo">
+    <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer">{{ link.title }}</a>
+  </h1>
+  <p class="card__domain">{{ link.url }}</p>
+  <p class="card__summary card__summary--solo">{{ link.summary }}</p>
+
+  <p class="card__tags">
+    {% for tag in link.tag_list %}
+    <a class="chip chip--sm" href="{{ url_for('pages.home', tag=tag) }}">{{ tag }}</a>
+    {% endfor %}
+  </p>
+
+  <footer class="card__foot">
+    <a class="card__category" href="{{ url_for('pages.home', category=link.category) }}">{{ link.category }}</a>
+    <span class="card__stamp">Edited {{ link.updated_at|shortdate }}</span>
+  </footer>
+</article>
+{% endblock %}

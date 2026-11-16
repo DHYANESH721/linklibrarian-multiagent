@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}LinkLibrarian{% endblock %}</title>
+  <meta name="description" content="An AI-powered bookmark manager that reads, summarizes, and files every link you save.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='4' fill='%2323453B'/><rect x='7' y='9' width='18' height='3' fill='%23F6F1E4'/><rect x='7' y='15' width='18' height='3' fill='%23B8863B'/><rect x='7' y='21' width='11' height='3' fill='%23F6F1E4'/></svg>">
+</head>
+<body>
+  <header class="masthead">
+    <div class="masthead__inner">
+      <a class="brand" href="{{ url_for('pages.home') }}">
+        <span class="brand__spine" aria-hidden="true"></span>
+        <span class="brand__name">Link<em>Librarian</em></span>
+      </a>
+      <p class="masthead__tagline">Paste a link. It gets read, summarized, and filed.</p>
+    </div>
+  </header>
+
+  <main class="shell">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="colophon">
+    <span>LinkLibrarian</span>
+    <span aria-hidden="true">·</span>
+    <span>Flask · SQLite · Groq</span>
+  </footer>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>
